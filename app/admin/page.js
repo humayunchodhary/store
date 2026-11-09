@@ -1,4 +1,4 @@
-import { AdminScreen } from "../../src/pages/Admin";
+import { AdminScreen } from "../../src/screens/Admin";
 
 export default function Page() {
   return <AdminScreen view="dash" />;

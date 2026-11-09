@@ -1,4 +1,4 @@
-import StaticPage from "../../../src/pages/StaticPage";
+import StaticPage from "../../../src/screens/StaticPage";
 
 export default function Page() {
   return <StaticPage />;

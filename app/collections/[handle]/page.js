@@ -1,4 +1,4 @@
-import Collection from "../../../src/pages/Collection";
+import Collection from "../../../src/screens/Collection";
 
 export default function Page() {
   return <Collection />;

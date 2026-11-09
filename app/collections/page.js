@@ -1,4 +1,4 @@
-import CollectionsIndex from "../../src/pages/CollectionsIndex";
+import CollectionsIndex from "../../src/screens/CollectionsIndex";
 
 export default function Page() {
   return <CollectionsIndex />;
