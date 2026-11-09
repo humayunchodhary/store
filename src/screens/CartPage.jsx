@@ -44,13 +44,13 @@ export default function CartPage() {
                     <small>{l.vendor}</small>
                   </div>
                 </div>
-                <span>{money(l.price)}</span>
+                <span className="line-price">{money(l.price)}</span>
                 <div className="qty box">
                   <button onClick={() => store.update(l.handle, l.size, l.qty - 1)} aria-label="Decrease">−</button>
                   <span>{l.qty}</span>
                   <button onClick={() => store.update(l.handle, l.size, l.qty + 1)} aria-label="Increase">+</button>
                 </div>
-                <span>{money(l.price * l.qty)}</span>
+                <span className="line-total">{money(l.price * l.qty)}</span>
                 <button className="x" onClick={() => store.remove(l.handle, l.size)} aria-label="Remove">×</button>
               </div>
             ))}
