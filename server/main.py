@@ -9,7 +9,19 @@ from fastapi.middleware.cors import CORSMiddleware
 
 ROOT = Path(__file__).parent / "data"
 CATALOG = json.loads((ROOT / "catalog.json").read_text())
-STATE_PATH = ROOT / "state.json"
+
+
+def choose_state_path():
+    probe = ROOT / ".write-probe"
+    try:
+        probe.write_text("")
+        probe.unlink(missing_ok=True)
+        return ROOT / "state.json"
+    except OSError:
+        return Path("/tmp/vha-state.json")
+
+
+STATE_PATH = choose_state_path()
 LOCK = threading.Lock()
 
 EMPTY_ACCOUNTS = {
