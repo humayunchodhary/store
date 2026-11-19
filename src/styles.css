@@ -683,3 +683,94 @@ button, a, input, select, textarea { -webkit-tap-highlight-color: transparent; }
   .admin-products-table tbody tr { padding: 10px; column-gap: 8px; }
   .admin-product-actions { gap: 7px; }
 }
+
+/* Full-site responsive QA: predictable containment and touch targets */
+:root { --mobile-gutter: 16px; }
+html { scroll-padding-top: 80px; }
+.site, .checkout, .admin { width: 100%; max-width: 100%; }
+.site main, .checkout .check-grid, .admin-main, .admin section, .admin-form { min-width: 0; }
+.wrap, .header-inner, .footer-grid, .paymarks { width: 100%; }
+.prose, .desc, .crumbs, .disclaimer, .fine { overflow-wrap: anywhere; }
+input, textarea, select { max-width: 100%; }
+button { touch-action: manipulation; }
+.admin section iframe, .admin section video, .admin section embed,
+.prose iframe, .prose video, .prose embed { max-width: 100%; height: auto; }
+.admin section iframe, .prose iframe { aspect-ratio: 16 / 9; width: 100%; }
+.admin-top, .admin-actions { min-width: 0; }
+.admin-top > * { max-width: 100%; }
+.admin .admin-side { min-width: 0; }
+.admin section table { max-width: none; }
+.paymarks { flex-wrap: wrap; }
+.paymarks b { max-width: 100%; overflow-wrap: anywhere; }
+.nav-arrow, .qty button, .sizes button, .dots button, .icon-btn { touch-action: manipulation; }
+
+@media (min-width: 701px) and (max-width: 980px) {
+  .admin-main { padding: 18px; }
+  .admin-tools { flex-wrap: wrap; }
+  .admin .admin-split { grid-template-columns: minmax(0, 1fr); }
+  .footer-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 700px) {
+  .admin { min-width: 0; overflow: clip; }
+  .admin-side {
+    position: relative;
+    max-width: 100vw;
+    scrollbar-width: thin;
+    overscroll-behavior-x: contain;
+  }
+  .admin-main { padding: 14px var(--mobile-gutter); }
+  .admin-main > h1, .admin-top h1 { line-height: 1.25; overflow-wrap: anywhere; }
+  .admin-top { gap: 10px; }
+  .admin-top .btn { margin: 0; }
+  .admin-form, .admin section { padding: 14px; border-radius: 6px; }
+  .admin .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .admin .report-grid, .admin .media-grid { grid-template-columns: minmax(0, 1fr); }
+  .admin .media-grid label { min-width: 0; }
+  .admin .media-grid img { max-width: 100%; }
+  .admin section { max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .admin .admin-products-table { min-width: 0; }
+  .admin .admin-products-table tbody tr { max-width: 100%; }
+  .admin .admin-products-table .admin-product-action-cell { min-width: 0; }
+  .admin-login { padding: 16px; }
+  .admin-login form { min-width: 0; }
+  .checkout header { flex-wrap: wrap; }
+  .checkout header .logo { overflow-wrap: anywhere; }
+  .check-grid { grid-template-columns: minmax(0, 1fr); }
+  .check-grid form input, .check-grid form select, .admin input, .admin select, .admin textarea { font-size: 16px; }
+  .check-grid aside > p { flex-wrap: wrap; }
+  .check-grid aside > p > * { min-width: 0; overflow-wrap: anywhere; }
+  .sum-line > * { min-width: 0; }
+  .sum-line b { overflow-wrap: anywhere; }
+  .receiver { min-width: 0; }
+  .drawer-body { overscroll-behavior-y: contain; }
+  .drawer header button, .search-modal form button { min-width: 42px; min-height: 42px; }
+  .filter .panel { max-width: min(260px, calc(100vw - 2 * var(--mobile-gutter))); }
+  .wa { right: 12px; bottom: max(12px, env(safe-area-inset-bottom)); }
+  .float-left { left: 12px; bottom: max(12px, env(safe-area-inset-bottom)); }
+  .follow { padding-inline: var(--mobile-gutter); }
+  .follow .btn { width: min(100%, 420px); }
+}
+
+@media (max-width: 420px) {
+  :root { --mobile-gutter: 12px; }
+  .admin-main { padding-inline: var(--mobile-gutter); }
+  .admin .admin-top > .btn { width: 100%; }
+  .admin .admin-product-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .admin .admin-product-actions a, .admin .admin-product-actions button { padding: 8px 6px; line-height: 1.25; }
+  .admin .stat { padding: 10px; }
+  .admin .stat span { font-size: 10px; }
+  .admin .stat b { font-size: clamp(16px, 5vw, 22px); }
+  .cart-row { min-width: 0; }
+  .prod > div { min-width: 0; }
+  .prod a { overflow-wrap: anywhere; }
+  .toolbar { display: grid; grid-template-columns: minmax(0, 1fr); }
+  .toolbar label { display: flex; justify-content: space-between; gap: 8px; align-items: center; }
+  .toolbar label select { min-width: 0; flex: 1; max-width: 58%; }
+  .header-inner { padding-inline: 8px; }
+  .header-tools .icon-btn { min-width: 32px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; }
+}
