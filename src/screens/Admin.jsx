@@ -137,20 +137,32 @@ function Products() {
   const [only, setOnly] = useState("all");
   const [busyHandle, setBusyHandle] = useState("");
   const [feedback, setFeedback] = useState("");
+  const [discounts, setDiscounts] = useState({});
 
-  async function toggleSale(product) {
+  function currentDiscount(product) {
+    return Number(product.compare) > Number(product.price)
+      ? Math.round((1 - Number(product.price) / Number(product.compare)) * 100)
+      : 20;
+  }
+
+  async function updateSale(product, remove = false) {
     if (busyHandle) return;
+    const isOnSale = Number(product.compare) > Number(product.price);
+    const percent = Number(discounts[product.handle] ?? currentDiscount(product));
+    if (!remove && (!Number.isInteger(percent) || percent < 1 || percent > 99)) {
+      setFeedback(`${product.title}: Enter a whole-number discount between 1% and 99%.`);
+      return;
+    }
     setFeedback("");
     setBusyHandle(product.handle);
-    const isOnSale = Number(product.compare) > Number(product.price);
-    const normalPrice = isOnSale ? Number(product.compare) : Number(product.price);
-    const discountPrice = Math.max(0, Math.round(normalPrice * 0.8));
-    const patch = isOnSale
-      ? { price: normalPrice, compare: null, badge: /^sale(?:\s|$)/i.test(product.badge || "") ? "" : (product.badge || "") }
-      : { price: discountPrice, compare: normalPrice, badge: "Sale 20%" };
+    const regularPrice = isOnSale ? Number(product.compare) : Number(product.price);
+    const patch = remove
+      ? { price: regularPrice, compare: null, badge: /^sale(?:\s|$)/i.test(product.badge || "") ? "" : (product.badge || "") }
+      : { price: Math.max(0, Math.round(regularPrice * (100 - percent) / 100)),
+          compare: regularPrice, badge: `Sale ${percent}%` };
     try {
       await store.saveProduct(product.handle, patch);
-      setFeedback(`${product.title}: ${isOnSale ? "Sale removed" : "20% sale applied"} successfully.`);
+      setFeedback(`${product.title}: ${remove ? "Sale removed" : `${percent}% sale applied`} successfully.`);
     } catch (error) {
       setFeedback(`Could not update ${product.title}: ${error.message}`);
     } finally {
@@ -184,7 +196,7 @@ function Products() {
           <option value="hidden">Hidden</option>
         </select>
       </div>
-      <p className="fine">Use Put on Sale to apply 20% off instantly. Use Edit to customize the discount and product details.</p>
+      <p className="fine">Enter a discount percentage for each product (for example 20, 30, or 50), then click Apply Sale. To change an existing sale, enter the new percentage and apply again.</p>
       {feedback && <p role="status" className="admin-feedback">{feedback}</p>}
       <table>
         <thead>
@@ -207,13 +219,28 @@ function Products() {
               <td>
                 <div className="admin-product-actions">
                   <Link className="admin-action-edit" to={`/admin/products/${p.handle}`}>Edit</Link>
-                  <button type="button" className={p.compare > p.price ? "admin-action-sale on-sale" : "admin-action-sale"}
+                  <label className="admin-discount-field">
+                    <span>Discount %</span>
+                    <input type="number" min="1" max="99" step="1" inputMode="numeric"
+                      value={discounts[p.handle] ?? currentDiscount(p)}
+                      disabled={!!busyHandle}
+                      onChange={(e) => setDiscounts((prev) => ({ ...prev, [p.handle]: e.target.value }))}
+                      aria-label={`Discount percentage for ${p.title}`} />
+                  </label>
+                  <button type="button" className="admin-action-sale"
                     disabled={!!busyHandle}
-                    onClick={() => toggleSale(p)}
-                    aria-label={`${p.compare > p.price ? "Remove sale from" : "Put on sale"} ${p.title}`}
+                    onClick={() => updateSale(p)}
+                    aria-label={`Apply selected sale to ${p.title}`}
                   >
-                    {busyHandle === p.handle ? "Saving…" : p.compare > p.price ? "Remove Sale" : "Put on Sale"}
+                    {busyHandle === p.handle ? "Saving…" : p.compare > p.price ? "Update Sale" : "Apply Sale"}
                   </button>
+                  {p.compare > p.price && (
+                    <button type="button" className="admin-action-sale on-sale"
+                      disabled={!!busyHandle} onClick={() => updateSale(p, true)}
+                      aria-label={`Remove sale from ${p.title}`}>
+                      Remove Sale
+                    </button>
+                  )}
                   <Link className="admin-action-view" to={`/products/${p.handle}`}>View</Link>
                 </div>
               </td>
