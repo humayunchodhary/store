@@ -36,6 +36,7 @@ export function StoreProvider({ children }) {
   const [orders, setOrders] = useState([]);
   const [admin, setAdmin] = useState(false);
   const [accounts, setAccounts] = useState(emptyAccounts);
+  const [settings, setSettings] = useState({});
   const [home, setHome] = useState({});
   const homeRef = useRef({});
   const homeWrite = useRef(Promise.resolve());
@@ -73,6 +74,7 @@ export function StoreProvider({ children }) {
         setCatalog(data.products || []);
         setOrders(data.orders || []);
         setAccounts({ ...emptyAccounts, ...(data.accounts || {}) });
+        setSettings(data.settings || {});
         const nextHome = data.home || {};
         homeRef.current = nextHome;
         setHome(nextHome);
@@ -140,6 +142,23 @@ export function StoreProvider({ children }) {
       body: JSON.stringify(patch),
     });
     setCatalog((prev) => prev.map((p) => (p.handle === handle ? saved : p)));
+  }
+
+  async function createProduct(product) {
+    const saved = await api("/api/products", { method: "POST", body: JSON.stringify(product) });
+    setCatalog((prev) => [...prev, saved]);
+    return saved;
+  }
+
+  async function deleteCreatedProduct(handle) {
+    await api(`/api/products/${encodeURIComponent(handle)}/created`, { method: "DELETE" });
+    setCatalog((prev) => prev.filter((p) => p.handle !== handle));
+  }
+
+  async function saveSettings(next) {
+    const saved = await api("/api/settings", { method: "PUT", body: JSON.stringify(next) });
+    setSettings(saved);
+    return saved;
   }
 
   async function resetProduct(handle) {
@@ -255,7 +274,11 @@ export function StoreProvider({ children }) {
         catalog,
         visible,
         saveProduct,
+        createProduct,
+        deleteCreatedProduct,
         resetProduct,
+        settings,
+        saveSettings,
         inCollection,
         orders,
         placeOrder,
