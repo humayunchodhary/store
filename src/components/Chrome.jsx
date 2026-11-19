@@ -11,6 +11,7 @@ function childrenOf(handle) {
 
 export default function Chrome({ children }) {
   const store = useStore();
+  const links = store.settings || {};
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const [query, setQuery] = useState("");
@@ -111,11 +112,11 @@ export default function Chrome({ children }) {
             <h2>About Us</h2>
             <p>30 KM Multan Road,<br />Lahore<br />Phone: (042)111-276-271<br />E-mail: info@varietybyha.com</p>
             <div className="socials">
-              <a href="https://www.facebook.com/armas.clothing" aria-label="Facebook" target="_blank" rel="noreferrer">f</a>
-              <a href="https://instagram.com/armas_clothing" aria-label="Instagram" target="_blank" rel="noreferrer">◎</a>
-              <a href="https://www.pinterest.com/Armasclothing/" aria-label="Pinterest" target="_blank" rel="noreferrer">p</a>
-              <a href="https://www.tiktok.com/@armasclothing" aria-label="TikTok" target="_blank" rel="noreferrer">♪</a>
-              <a href="https://www.youtube.com/@armas_clothing" aria-label="YouTube" target="_blank" rel="noreferrer">▶</a>
+              <a href={links.facebook || "https://www.facebook.com/armas.clothing"} aria-label="Facebook" target="_blank" rel="noreferrer">f</a>
+              <a href={links.instagram || "https://instagram.com/armas_clothing"} aria-label="Instagram" target="_blank" rel="noreferrer">◎</a>
+              <a href={links.pinterest || "https://www.pinterest.com/Armasclothing/"} aria-label="Pinterest" target="_blank" rel="noreferrer">p</a>
+              <a href={links.tiktok || "https://www.tiktok.com/@armasclothing"} aria-label="TikTok" target="_blank" rel="noreferrer">♪</a>
+              <a href={links.youtube || "https://www.youtube.com/@armas_clothing"} aria-label="YouTube" target="_blank" rel="noreferrer">▶</a>
             </div>
           </div>
           <div>
@@ -138,14 +139,14 @@ export default function Chrome({ children }) {
         </div>
         <div className="paymarks" aria-label="Payment methods">
           <span>Payment methods</span>
-          <b className="visa">VISA</b>
-          <b className="mc">Mastercard</b>
-          <b className="ep">Easypaisa</b>
-          <b className="jc">JazzCash</b>
+          <b className="visa">{links.visa || "VISA"}</b>
+          <b className="mc">{links.mastercard || "Mastercard"}</b>
+          <b className="ep">{links.easypaisaLabel || "Easypaisa"}</b>
+          <b className="jc">{links.jazzcashLabel || "JazzCash"}</b>
         </div>
       </footer>
 
-      <a className="wa" href="https://wa.me/923104644418" target="_blank" rel="noreferrer" aria-label="WhatsApp">
+      <a className="wa" href={`https://wa.me/${links.whatsapp || "923104644418"}`} target="_blank" rel="noreferrer" aria-label="WhatsApp">
         <svg viewBox="0 0 32 32" width="28" height="28" aria-hidden="true"><path fill="#fff" d="M19.1 17.4c-.3-.1-1.6-.8-1.8-.9s-.4-.1-.6.1-.7.9-.8 1-.3.2-.6.1a7.4 7.4 0 0 1-2.2-1.4 8 8 0 0 1-1.5-1.9c-.2-.3 0-.4.1-.6l.4-.4.2-.4a1.7 1.7 0 0 0 0-.5c0-.1-.6-1.4-.8-1.9s-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.8 12 12 0 0 0 4.5 4 15 15 0 0 0 1.5.6 3.6 3.6 0 0 0 1.7.1 2.7 2.7 0 0 0 1.8-1.2 2.2 2.2 0 0 0 .2-1.2c-.1-.1-.3-.2-.6-.3z"/><path fill="#fff" d="M16.1 3A13 13 0 0 0 4.7 20.4L3 29l8.8-1.6A13 13 0 1 0 16.1 3zm0 23.6a10.6 10.6 0 0 1-5.4-1.5l-.4-.2-5.2 1 1-5.1-.3-.4A10.6 10.6 0 1 1 16.1 26.6z"/></svg>
       </a>
       <button className="float-left" aria-label="Shopping cart" onClick={() => store.setDrawer(true)}>
