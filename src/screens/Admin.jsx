@@ -157,7 +157,7 @@ function Products() {
     setBusyHandle(product.handle);
     const regularPrice = isOnSale ? Number(product.compare) : Number(product.price);
     const patch = remove
-      ? { price: regularPrice, compare: null, badge: /^sale(?:\\s|$)/i.test(product.badge || "") ? "" : (product.badge || "") }
+      ? { price: regularPrice, compare: null, badge: /^sale(?:\s|$)/i.test(product.badge || "") ? "" : (product.badge || "") }
       : { price: Math.max(0, Math.round(regularPrice * (100 - percent) / 100)),
           compare: regularPrice, badge: `Sale ${percent}%` };
     try {
