@@ -165,7 +165,7 @@ def patch_product(handle: str, patch: dict):
 def reset_product(handle: str):
     with LOCK:
         state = load_state()
-        base = find_product(handle)
+        base = find_product(handle, state)
         if not base:
             raise HTTPException(404, "Unknown product")
         state["overrides"].pop(handle, None)
