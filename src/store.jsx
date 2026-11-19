@@ -13,7 +13,10 @@ async function api(path, options = {}) {
     headers: { "Content-Type": "application/json" },
     ...options,
   });
-  if (!res.ok) throw new Error("Shop request failed");
+  if (!res.ok) {
+    const detail = await res.json().catch(() => ({}));
+    throw new Error(typeof detail.detail === "string" ? detail.detail : "Shop request failed");
+  }
   return res.json();
 }
 
