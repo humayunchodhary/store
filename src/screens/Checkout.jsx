@@ -29,6 +29,7 @@ function receiverFor(pay, accounts) {
 
 export default function Checkout() {
   const store = useStore();
+  const marks = store.settings || {};
   const [done, setDone] = useState(false);
   const [pay, setPay] = useState("card");
   const [refId, setRefId] = useState("");
@@ -121,13 +122,14 @@ export default function Checkout() {
           <h2>Payment</h2>
           <p className="fine">Send {money(store.subtotal)} to the shop account, then enter the transaction ID. Your card number and wallet PIN are not collected.</p>
           {METHODS.map(([id, label, mark]) => {
+            const displayMark = id === "card" ? `${marks.visa || "VISA"} · ${marks.mastercard || "Mastercard"} · AMEX` : id === "easypaisa" ? (marks.easypaisaLabel || mark) : id === "jazzcash" ? (marks.jazzcashLabel || mark) : mark;
             const receiver = receiverFor(id, store.accounts);
             return (
               <div key={id} className="pay-block">
                 <label className={"pay-opt" + (pay === id ? " on" : "")}>
                   <input type="radio" name="pay" checked={pay === id} onChange={() => setPay(id)} />
                   <span>{label}</span>
-                  <span className="marks">{mark}</span>
+                  <span className="marks">{displayMark}</span>
                 </label>
                 {pay === id && (
                   <div className="card-fields">
