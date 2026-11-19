@@ -565,3 +565,12 @@ button, a, input, select, textarea { -webkit-tap-highlight-color: transparent; }
 @media (max-width: 800px) {
   .admin-product-actions { min-width: 160px; }
 }
+
+/* Custom sale percentage selector in admin product list */
+.admin-discount-field { display: inline-flex; flex-direction: column; gap: 3px; font-size: 11px; font-weight: 600; color: var(--muted); }
+.admin-discount-field input { width: 72px; min-height: 36px; padding: 6px 8px; border: 1px solid var(--line); border-radius: 4px; font: inherit; font-size: 14px; color: var(--text); background: #fff; }
+.admin-discount-field input:focus-visible { outline: 2px solid var(--wine); outline-offset: 2px; }
+.admin-product-actions { min-width: 260px; }
+@media (max-width: 800px) {
+  .admin-product-actions { min-width: 230px; }
+}
