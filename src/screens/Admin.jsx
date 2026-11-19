@@ -135,6 +135,29 @@ function Products() {
   const store = useStore();
   const [q, setQ] = useState("");
   const [only, setOnly] = useState("all");
+  const [busyHandle, setBusyHandle] = useState("");
+  const [feedback, setFeedback] = useState("");
+
+  async function toggleSale(product) {
+    if (busyHandle) return;
+    setFeedback("");
+    setBusyHandle(product.handle);
+    const isOnSale = Number(product.compare) > Number(product.price);
+    const normalPrice = isOnSale ? Number(product.compare) : Number(product.price);
+    const discountPrice = Math.max(0, Math.round(normalPrice * 0.8));
+    const patch = isOnSale
+      ? { price: normalPrice, compare: null, badge: /^sale(?:\s|$)/i.test(product.badge || "") ? "" : (product.badge || "") }
+      : { price: discountPrice, compare: normalPrice, badge: "Sale 20%" };
+    try {
+      await store.saveProduct(product.handle, patch);
+      setFeedback(`${product.title}: ${isOnSale ? "Sale removed" : "20% sale applied"} successfully.`);
+    } catch (error) {
+      setFeedback(`Could not update ${product.title}: ${error.message}`);
+    } finally {
+      setBusyHandle("");
+    }
+  }
+
   const list = useMemo(() => {
     return store.catalog.filter((p) => {
       if (only === "low" && Number(p.stock) > 5) return false;
@@ -161,9 +184,11 @@ function Products() {
           <option value="hidden">Hidden</option>
         </select>
       </div>
+      <p className="fine">Use Put on Sale to apply 20% off instantly. Use Edit to customize the discount and product details.</p>
+      {feedback && <p role="status" className="admin-feedback">{feedback}</p>}
       <table>
         <thead>
-          <tr><th></th><th>Product</th><th>Type</th><th>Price</th><th>Stock</th><th></th></tr>
+          <tr><th></th><th>Product</th><th>Type</th><th>Price</th><th>Stock</th><th>Actions</th></tr>
         </thead>
         <tbody>
           {list.map((p) => (
@@ -179,7 +204,19 @@ function Products() {
                 {p.compare ? <small> {money(p.compare)}</small> : null}
               </td>
               <td>{p.stock}</td>
-              <td><Link to={`/products/${p.handle}`}>View</Link></td>
+              <td>
+                <div className="admin-product-actions">
+                  <Link className="admin-action-edit" to={`/admin/products/${p.handle}`}>Edit</Link>
+                  <button type="button" className={p.compare > p.price ? "admin-action-sale on-sale" : "admin-action-sale"}
+                    disabled={!!busyHandle}
+                    onClick={() => toggleSale(p)}
+                    aria-label={`${p.compare > p.price ? "Remove sale from" : "Put on sale"} ${p.title}`}
+                  >
+                    {busyHandle === p.handle ? "Saving…" : p.compare > p.price ? "Remove Sale" : "Put on Sale"}
+                  </button>
+                  <Link className="admin-action-view" to={`/products/${p.handle}`}>View</Link>
+                </div>
+              </td>
             </tr>
           ))}
         </tbody>

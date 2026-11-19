@@ -139,7 +139,6 @@ export function StoreProvider({ children }) {
   const categories = home.categories || defaults.categories;
 
   async function saveProduct(handle, patch) {
-    setCatalog((prev) => prev.map((p) => (p.handle === handle ? { ...p, ...patch } : p)));
     const saved = await api(`/api/products/${encodeURIComponent(handle)}`, {
       method: "PATCH",
       body: JSON.stringify(patch),
