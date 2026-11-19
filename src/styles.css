@@ -540,3 +540,10 @@ button, a, input, select, textarea { -webkit-tap-highlight-color: transparent; }
 @media (prefers-reduced-motion: reduce) {
   .shot img { transition: none; }
 }
+
+/* Admin forms: editable catalog descriptions and store configuration */
+.admin-form input, .admin-form textarea, .admin-form select { width: 100%; min-width: 0; border: 1px solid #d9c4c9; padding: 10px; background: #fff; }
+.admin-form textarea { min-height: 90px; resize: vertical; }
+.admin-top { flex-wrap: wrap; }
+.admin-top > .btn { width: auto; }
+@media (max-width: 600px) { .admin-top > .btn { max-width: 100%; } }

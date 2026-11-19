@@ -30,12 +30,23 @@ EMPTY_ACCOUNTS = {
     "bank": {"title": "", "bank": "", "iban": ""},
 }
 STATUSES = {"Awaiting confirmation", "Paid", "Packed", "Fulfilled", "Cancelled"}
-PRODUCT_FIELDS = {"title", "price", "compare", "stock", "badge", "ready", "hidden"}
+PRODUCT_FIELDS = {"title", "price", "compare", "stock", "badge", "ready", "hidden", "type", "images", "summary", "collections", "sizes", "color", "fabric", "includes"}
+DEFAULT_SETTINGS = {
+    "facebook": "https://www.facebook.com/armas.clothing",
+    "instagram": "https://instagram.com/armas_clothing",
+    "pinterest": "https://www.pinterest.com/Armasclothing/",
+    "tiktok": "https://www.tiktok.com/@armasclothing",
+    "youtube": "https://www.youtube.com/@armas_clothing",
+    "whatsapp": "923104644418",
+    "visa": "VISA", "mastercard": "Mastercard",
+    "easypaisaLabel": "Easypaisa", "jazzcashLabel": "JazzCash",
+}
+
 
 
 def load_state():
     if not STATE_PATH.exists():
-        return {"overrides": {}, "orders": [], "accounts": deepcopy(EMPTY_ACCOUNTS), "home": {}}
+        return {"overrides": {}, "addedProducts": [], "orders": [], "accounts": deepcopy(EMPTY_ACCOUNTS), "home": {}, "settings": deepcopy(DEFAULT_SETTINGS)}
     data = json.loads(STATE_PATH.read_text())
     accounts = deepcopy(EMPTY_ACCOUNTS)
     for key, value in (data.get("accounts") or {}).items():
@@ -45,6 +56,8 @@ def load_state():
                     accounts[key][field] = value[field]
     return {
         "overrides": data.get("overrides") or {},
+        "addedProducts": data.get("addedProducts") or [],
+        "settings": {**DEFAULT_SETTINGS, **(data.get("settings") or {})},
         "orders": data.get("orders") or [],
         "accounts": accounts,
         "home": data.get("home") or {},
@@ -57,7 +70,7 @@ def save_state(state):
 
 def merged_products(state):
     merged = []
-    for product in CATALOG["products"]:
+    for product in [*CATALOG["products"], *state.get("addedProducts", [])]:
         patch = state["overrides"].get(product["handle"]) or {}
         merged.append({**product, **patch})
     return merged
@@ -69,6 +82,7 @@ def snapshot(state):
         "products": merged_products(state),
         "orders": state["orders"],
         "accounts": state["accounts"],
+        "settings": state["settings"],
         "home": home,
         "slides": home.get("slides") or CATALOG["slides"],
         "categories": home.get("categories") or CATALOG["categories"],
@@ -77,8 +91,42 @@ def snapshot(state):
     }
 
 
-def find_product(handle):
-    return next((product for product in CATALOG["products"] if product["handle"] == handle), None)
+def find_product(handle, state=None):
+    items = [*CATALOG["products"], *((state or {}).get("addedProducts") or [])]
+    return next((product for product in items if product["handle"] == handle), None)
+
+
+def normalize_product(body, existing=None):
+    from urllib.parse import urlparse
+    from re import fullmatch
+    data = dict(existing or {})
+    data.update({key: value for key, value in body.items() if key in PRODUCT_FIELDS or key == "handle"})
+    handle = str(data.get("handle") or "").strip()
+    if not fullmatch(r"[a-z0-9]+(?:-[a-z0-9]+)*", handle):
+        raise HTTPException(400, "Handle must contain lowercase letters, digits and hyphens")
+    title = str(data.get("title") or "").strip()
+    if not title:
+        raise HTTPException(400, "Product title required")
+    try:
+        price = int(data.get("price") or 0)
+        stock = int(data.get("stock") or 0)
+        compare = int(data["compare"]) if data.get("compare") not in (None, "") else None
+    except (ValueError, TypeError):
+        raise HTTPException(400, "Prices and stock must be numbers")
+    if price < 0 or stock < 0 or (compare is not None and compare <= price):
+        raise HTTPException(400, "Compare-at price must exceed sale price; all amounts must be nonnegative")
+    images = data.get("images") or []
+    if not isinstance(images, list) or not images or not all(isinstance(url, str) and urlparse(url).scheme in ("http", "https") and urlparse(url).netloc for url in images):
+        raise HTTPException(400, "At least one valid image URL is required")
+    for field in ("collections", "sizes"):
+        if not isinstance(data.get(field), list):
+            raise HTTPException(400, f"{field} must be a list")
+    return {
+        **data, "handle": handle, "title": title, "price": price, "stock": stock,
+        "compare": compare, "images": images, "vendor": "VARIETY BY HA",
+        "badge": str(data.get("badge") or ""), "hidden": bool(data.get("hidden", False)),
+        "ready": bool(data.get("ready", False)),
+    }
 
 
 app = FastAPI()
@@ -100,28 +148,84 @@ def shop():
 def patch_product(handle: str, patch: dict):
     with LOCK:
         state = load_state()
-        base = find_product(handle)
+        base = find_product(handle, state)
         if not base:
             raise HTTPException(404, "Unknown product")
         current = dict(state["overrides"].get(handle) or {})
         for key, value in patch.items():
             if key in PRODUCT_FIELDS:
                 current[key] = value
-        state["overrides"][handle] = current
+        validated = normalize_product({**base, **current})
+        state["overrides"][handle] = {key: validated[key] for key in PRODUCT_FIELDS if key in current}
         save_state(state)
-        return {**base, **current}
+        return validated
 
 
 @app.delete("/api/products/{handle}")
 def reset_product(handle: str):
     with LOCK:
         state = load_state()
-        base = find_product(handle)
+        base = find_product(handle, state)
         if not base:
             raise HTTPException(404, "Unknown product")
         state["overrides"].pop(handle, None)
         save_state(state)
         return base
+
+
+@app.post("/api/products")
+def create_product(body: dict):
+    with LOCK:
+        state = load_state()
+        data = normalize_product({
+            "type": "Pret", "images": [], "summary": "",
+            "collections": ["new-arrivals"], "sizes": ["XS", "S", "M", "L", "XL"],
+            "stock": 0, "ready": False, "hidden": False, "vendor": "VARIETY BY HA",
+            **body,
+        })
+        if find_product(data["handle"], state):
+            raise HTTPException(409, "Product handle already exists")
+        state["addedProducts"].append(data)
+        save_state(state)
+        return data
+
+
+@app.delete("/api/products/{handle}/created")
+def delete_created_product(handle: str):
+    with LOCK:
+        state = load_state()
+        before = len(state["addedProducts"])
+        state["addedProducts"] = [p for p in state["addedProducts"] if p["handle"] != handle]
+        if len(state["addedProducts"]) == before:
+            raise HTTPException(404, "Only newly created products can be deleted")
+        state["overrides"].pop(handle, None)
+        save_state(state)
+        return {"deleted": handle}
+
+
+@app.put("/api/settings")
+def save_settings(body: dict):
+    from urllib.parse import urlparse
+    with LOCK:
+        state = load_state()
+        next_settings = dict(state["settings"])
+        for key, value in body.items():
+            if key not in DEFAULT_SETTINGS or not isinstance(value, str):
+                continue
+            val = value.strip()
+            if key in ("facebook", "instagram", "pinterest", "tiktok", "youtube") and val:
+                parsed = urlparse(val)
+                if parsed.scheme != "https" or not parsed.netloc:
+                    raise HTTPException(400, "Social links must use https://")
+            if key == "whatsapp":
+                from re import fullmatch
+                val = val.replace("+", "").replace(" ", "").replace("-", "")
+                if val and not fullmatch(r"[0-9]{8,15}", val):
+                    raise HTTPException(400, "WhatsApp number must include country code, digits only")
+            next_settings[key] = val
+        state["settings"] = next_settings
+        save_state(state)
+        return next_settings
 
 
 @app.post("/api/orders")
