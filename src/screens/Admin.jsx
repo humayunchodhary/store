@@ -198,25 +198,25 @@ function Products() {
       </div>
       <p className="fine">Enter a discount percentage for each product (for example 20, 30, or 50), then click Apply Sale. To change an existing sale, enter the new percentage and apply again.</p>
       {feedback && <p role="status" className="admin-feedback">{feedback}</p>}
-      <table>
+      <table className="admin-products-table">
         <thead>
           <tr><th></th><th>Product</th><th>Type</th><th>Price</th><th>Stock</th><th>Actions</th></tr>
         </thead>
         <tbody>
           {list.map((p) => (
             <tr key={p.handle}>
-              <td><img src={p.images[0]} alt="" /></td>
-              <td>
+              <td className="admin-product-image"><img src={p.images[0]} alt="" loading="lazy" /></td>
+              <td className="admin-product-name" data-label="Product">
                 <Link to={`/admin/products/${p.handle}`}>{p.title}</Link>
                 {p.hidden ? <small> Hidden</small> : null}
               </td>
-              <td>{p.type}</td>
-              <td>
+              <td data-label="Type">{p.type}</td>
+              <td data-label="Price">
                 {money(p.price)}
                 {p.compare ? <small> {money(p.compare)}</small> : null}
               </td>
-              <td>{p.stock}</td>
-              <td>
+              <td data-label="Stock">{p.stock}</td>
+              <td className="admin-product-action-cell" data-label="Actions">
                 <div className="admin-product-actions">
                   <Link className="admin-action-edit" to={`/admin/products/${p.handle}`}>Edit</Link>
                   <label className="admin-discount-field">
