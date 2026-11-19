@@ -35,6 +35,7 @@ function Shell({ children }) {
         <NavLink to="/admin/orders">Orders</NavLink>
         <NavLink to="/admin/homepage">Homepage</NavLink>
         <NavLink to="/admin/payments">Payments</NavLink>
+        <NavLink to="/admin/settings">Store settings</NavLink>
         <div className="admin-side-foot">
           <Link to="/">View shop</Link>
           <button type="button" onClick={store.signOutAdmin}>Sign out</button>
@@ -148,6 +149,7 @@ function Products() {
     <Shell>
       <div className="admin-top">
         <h1>Products</h1>
+        <Link className="btn" to="/admin/products/new">Add product</Link>
         <span>{list.length}</span>
       </div>
       <div className="admin-tools">
@@ -194,6 +196,15 @@ function ProductForm({ product, onSave, onReset }) {
   const [badge, setBadge] = useState(product.badge || "");
   const [ready, setReady] = useState(!!product.ready);
   const [hidden, setHidden] = useState(!!product.hidden);
+  const [type, setType] = useState(product.type || "Pret");
+  const [summary, setSummary] = useState(product.summary || "");
+  const [images, setImages] = useState((product.images || []).join("\n"));
+  const [sizes, setSizes] = useState((product.sizes || []).join(", "));
+  const [collections, setCollections] = useState((product.collections || []).join(", "));
+  const [includes, setIncludes] = useState(product.includes || "");
+  const [color, setColor] = useState(product.color || "");
+  const [fabric, setFabric] = useState(product.fabric || "");
+  const [error, setError] = useState("");
 
   return (
     <form
@@ -202,21 +213,42 @@ function ProductForm({ product, onSave, onReset }) {
         e.preventDefault();
         const nextPrice = Math.max(0, Math.round(Number(price) || 0));
         const nextCompare = compare.trim() === "" ? null : Math.max(0, Math.round(Number(compare) || 0));
+        if (nextCompare !== null && nextCompare <= nextPrice) {
+          setError("Original price must be higher than sale price."); return;
+        }
+        const imageList = images.split(/\n+/).map((v) => v.trim()).filter(Boolean);
+        if (!imageList.length) { setError("Add at least one image URL."); return; }
+        setError("");
         onSave({
-          title: title.trim() || product.title,
-          price: nextPrice,
-          compare: nextCompare,
+          title: title.trim() || product.title, type: type.trim(), summary: summary.trim(),
+          images: imageList,
+          collections: collections.split(",").map((v) => v.trim()).filter(Boolean),
+          sizes: sizes.split(",").map((v) => v.trim()).filter(Boolean),
+          includes: includes.trim(), color: color.trim(), fabric: fabric.trim(),
+          price: nextPrice, compare: nextCompare,
           stock: Math.max(0, Math.round(Number(stock) || 0)),
-          badge: badge.trim(),
-          ready,
-          hidden,
+          badge: nextCompare ? (badge.trim() || "Sale") : badge.trim(),
+          ready, hidden,
         });
       }}
     >
-      <label>Title<input value={title} onChange={(e) => setTitle(e.target.value)} /></label>
+      {error && <p className="low">{error}</p>}
+      <label>Title<input required value={title} onChange={(e) => setTitle(e.target.value)} /></label>
+      <label>Type<input value={type} onChange={(e) => setType(e.target.value)} /></label>
+      <label>Description<textarea rows="4" value={summary} onChange={(e) => setSummary(e.target.value)} /></label>
+      <label>Image URLs (one per line)<textarea rows="3" value={images} onChange={(e) => setImages(e.target.value)} /></label>
+      <div className="split">
+        <label>Sizes (comma separated)<input value={sizes} onChange={(e) => setSizes(e.target.value)} /></label>
+        <label>Collections (handles, comma separated)<input value={collections} onChange={(e) => setCollections(e.target.value)} /></label>
+      </div>
+      <div className="split">
+        <label>Includes<input value={includes} onChange={(e) => setIncludes(e.target.value)} /></label>
+        <label>Fabric<input value={fabric} onChange={(e) => setFabric(e.target.value)} /></label>
+      </div>
+      <label>Color<input value={color} onChange={(e) => setColor(e.target.value)} /></label>
       <div className="split">
         <label>Price (Rs)<input inputMode="numeric" value={price} onChange={(e) => setPrice(e.target.value)} /></label>
-        <label>Compare at<input inputMode="numeric" value={compare} onChange={(e) => setCompare(e.target.value)} placeholder="Empty if not on sale" /></label>
+        <label>Original price (Rs) — higher than sale price<input inputMode="numeric" value={compare} onChange={(e) => setCompare(e.target.value)} placeholder="Leave empty for no sale" /></label>
       </div>
       <div className="split">
         <label>Stock<input inputMode="numeric" value={stock} onChange={(e) => setStock(e.target.value)} /></label>
@@ -241,7 +273,7 @@ function ProductEdit() {
   if (!product) {
     return <Shell><p>This product is not in the catalog.</p><Link to="/admin/products">Back to products</Link></Shell>;
   }
-  const stamp = [product.title, product.price, product.compare, product.stock, product.badge, product.ready, product.hidden].join("|");
+  const stamp = [product.title, product.price, product.compare, product.stock, product.badge, product.ready, product.hidden, product.images?.join(","), product.collections?.join(",")].join("|");
   return (
     <Shell>
       <div className="admin-top">
@@ -252,13 +284,13 @@ function ProductEdit() {
       <ProductForm
         key={stamp}
         product={product}
-        onSave={(patch) => {
-          store.saveProduct(product.handle, patch);
-          setMsg("Saved. The shop uses this now.");
+        onSave={async (patch) => {
+          try { await store.saveProduct(product.handle, patch); setMsg("Saved. The shop uses this now."); }
+          catch (e) { setMsg("Could not save: " + e.message); }
         }}
-        onReset={() => {
-          store.resetProduct(product.handle);
-          setMsg("Restored to the original catalog.");
+        onReset={async () => {
+          try { await store.resetProduct(product.handle); setMsg("Restored original."); }
+          catch (e) { setMsg("Could not restore: " + e.message); }
         }}
       />
     </Shell>
@@ -598,10 +630,63 @@ function Payments() {
   );
 }
 
+
+function NewProduct() {
+  const store = useStore();
+  const [handle, setHandle] = useState("");
+  const draft = { title: "", type: "Pret", price: 0, compare: null, stock: 0, badge: "",
+    images: [""], summary: "", collections: ["new-arrivals"], sizes: ["XS", "S", "M", "L", "XL"],
+    includes: "", color: "", fabric: "", ready: false, hidden: false };
+  const [message, setMessage] = useState("");
+  return <Shell>
+    <div className="admin-top"><h1>Add product</h1><Link to="/admin/products">All products</Link></div>
+    <label className="admin-form">Product URL handle (lowercase letters, numbers and hyphens)
+      <input required value={handle} onChange={(e) => setHandle(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""))} placeholder="e.g. summer-collection-01" />
+    </label>
+    {message && <p role="status">{message}</p>}
+    <ProductForm product={draft}
+      onSave={async (patch) => {
+        try { await store.createProduct({ ...draft, ...patch, handle }); setMessage("Product created! Back to Products to edit it."); }
+        catch (e) { setMessage("Could not create: " + e.message); }
+      }}
+      onReset={() => setMessage("Refresh this page to clear the draft.")}
+    />
+  </Shell>;
+}
+const SETTING_FIELDS = [
+  ["facebook", "Facebook URL"], ["instagram", "Instagram URL"],
+  ["pinterest", "Pinterest URL"], ["tiktok", "TikTok URL"],
+  ["youtube", "YouTube URL"], ["whatsapp", "WhatsApp number (country code, no +)"],
+  ["visa", "Visa badge label"], ["mastercard", "Mastercard badge label"],
+  ["easypaisaLabel", "Easypaisa badge label"], ["jazzcashLabel", "JazzCash badge label"],
+];
+function StoreSettings() {
+  const store = useStore();
+  const [form, setForm] = useState({ ...store.settings });
+  const [message, setMessage] = useState("");
+  return <Shell>
+    <div className="admin-top"><h1>Store settings</h1></div>
+    <p>Edit footer social links, WhatsApp chat number and payment badges. Card labels are display text, not payment processing credentials.</p>
+    <form className="admin-form" onSubmit={async (e) => {
+      e.preventDefault();
+      try { await store.saveSettings(form); setMessage("Store settings saved."); }
+      catch (err) { setMessage("Save failed: " + err.message); }
+    }}>
+      {SETTING_FIELDS.map(([key, label]) => <label key={key}>{label}
+        <input value={form[key] ?? ""} onChange={(e) => setForm((f) => ({ ...f, [key]: e.target.value }))} />
+      </label>)}
+      <button className="btn" type="submit">Save store settings</button>
+      {message && <p role="status">{message}</p>}
+    </form>
+  </Shell>;
+}
+
 export function AdminScreen({ view }) {
   const store = useStore();
   if (!store.admin) return <Login />;
   if (view === "products") return <Products />;
+  if (view === "settings") return <StoreSettings />;
+  if (view === "new-product") return <NewProduct />;
   if (view === "product") return <ProductEdit />;
   if (view === "orders") return <Orders />;
   if (view === "order") return <OrderDetail />;
