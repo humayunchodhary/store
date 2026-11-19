@@ -26,7 +26,7 @@ export default function Product() {
     return <div className="wrap page"><p>This piece is not in the shop.</p><Link to="/collections/new-arrivals">Continue shopping</Link></div>;
   }
 
-  const url = `${window.location.origin}/products/${product.handle}`;
+  const url = typeof window === "undefined" ? `/products/${product.handle}` : `${window.location.origin}/products/${product.handle}`;
 
   return (
     <div className="wrap page">
@@ -36,7 +36,7 @@ export default function Product() {
           <div className="stage">
             {product.badge && <span className={product.badge.startsWith("Sale") ? "badge sale" : "badge"}>{product.badge}</span>}
             <button className="nav-arrow left" aria-label="Previous" onClick={() => setPhoto((n) => (n + product.images.length - 1) % product.images.length)}>‹</button>
-            <img src={product.images[photo]} alt={product.title} />
+            <img src={product.images[photo] || product.images[0]} alt={product.title} />
             <button className="nav-arrow right" aria-label="Next" onClick={() => setPhoto((n) => (n + 1) % product.images.length)}>›</button>
           </div>
           {product.images.length > 1 && (
