@@ -268,6 +268,12 @@ function ProductForm({ product, onSave, onReset }) {
 function ProductEdit() {
   const { handle } = useParams();
   const store = useStore();
+  if (handle === "new") return <NewProduct />;
+  return <EditExistingProduct handle={handle} />;
+}
+
+function EditExistingProduct({ handle }) {
+  const store = useStore();
   const product = store.catalog.find((p) => p.handle === handle);
   const [msg, setMsg] = useState("");
   if (!product) {
