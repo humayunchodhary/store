@@ -22,8 +22,10 @@ export default function Chrome({ children }) {
   const [openMenu, setOpenMenu] = useState(null);
 
   useEffect(() => {
-    document.body.style.overflow = store.drawer || store.searchOpen || store.menuOpen || store.accountOpen ? "hidden" : "";
-  }, [store.drawer, store.searchOpen, store.menuOpen, store.accountOpen]);
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = store.drawer || store.searchOpen || store.menuOpen || store.accountOpen || store.popup ? "hidden" : previous;
+    return () => { document.body.style.overflow = previous; };
+  }, [store.drawer, store.searchOpen, store.menuOpen, store.accountOpen, store.popup]);
 
   if (pathname.startsWith("/checkout") || pathname.startsWith("/admin")) return <div className="site bare">{children}</div>;
 

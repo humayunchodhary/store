@@ -14,6 +14,7 @@ export default function Home() {
   const [tab, setTab] = useState(featuredTabs[0].handle);
 
   useEffect(() => {
+    if (slides.length < 2) return;
     const t = setInterval(() => setSlide((n) => (n + 1) % slides.length), 5000);
     return () => clearInterval(t);
   }, [slides.length]);
@@ -23,16 +24,16 @@ export default function Home() {
     <>
       <section className="hero" aria-label="Promotions">
         {slides.map((s, i) => (
-          <Link key={s.href + i} to={s.href} className={i === slide ? "on" : ""} aria-hidden={i !== slide}>
+          <Link key={s.href + i} to={s.href} className={i === slide % slides.length ? "on" : ""} aria-hidden={i !== slide % slides.length}>
             <picture>
-              <source media="(max-width: 750px)" srcSet={s.mobile} />
+              <source media="(max-width: 750px)" srcSet={s.mobile || s.image} />
               <img src={s.image} alt="" />
             </picture>
           </Link>
         ))}
         <div className="dots">
           {slides.map((_, i) => (
-            <button key={i} className={i === slide ? "on" : ""} aria-label={`Slide ${i + 1}`} onClick={() => setSlide(i)} />
+            <button key={i} className={i === slide % slides.length ? "on" : ""} aria-label={`Slide ${i + 1}`} onClick={() => setSlide(i)} />
           ))}
         </div>
       </section>
